@@ -45,14 +45,39 @@ export async function GET(request: NextRequest) {
     // Get expenses data for the year
     const expenses = await db.expense.findMany({
       where: {
-        createdAt: {
+        date: {
           gte: new Date(`${year}-01-01`),
           lt: new Date(`${parseInt(year) + 1}-01-01`),
         },
       },
-      include: { user: true },
-      orderBy: { createdAt: "desc" },
+      include: {
+        user: true,
+      },
+      orderBy: { date: "desc" },
     });
+
+    // Get dues data (sales with outstanding payments)
+    const dues = await db.sale.findMany({
+      where: {
+        hasDue: true,
+        status: {
+          in: ["pending", "partial"],
+        },
+      },
+      include: {
+        customer: true,
+        duePayments: true,
+      },
+    });
+
+    // Calculate dues totals
+    const totalOutstanding = dues.reduce((sum, sale) => {
+      return sum + (sale.total - sale.paidAmount);
+    }, 0);
+
+    const totalCollected = dues.reduce((sum, sale) => {
+      return sum + sale.paidAmount;
+    }, 0);
 
     // Calculate monthly data
     const monthlyData = [];
@@ -161,6 +186,15 @@ export async function GET(request: NextRequest) {
         sales: totalSales,
         expenses: totalExpenses,
         profit: totalProfit,
+      },
+      dues: {
+        totalOutstanding,
+        totalCollected,
+        activeDuesCount: dues.length,
+        collectionRate:
+          totalCollected + totalOutstanding > 0
+            ? (totalCollected / (totalCollected + totalOutstanding)) * 100
+            : 0,
       },
       year: parseInt(year),
     });

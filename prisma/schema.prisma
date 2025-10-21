@@ -84,6 +84,9 @@ model Sale {
   id        String     @id @default(cuid())
   total     Float
   discount  Float      @default(0)
+  paidAmount Float     @default(0)
+  status    String     @default("pending") // pending, partial, paid
+  hasDue    Boolean    @default(false) // explicitly mark if sale has dues
   userId    String
   customerId String?
   createdAt DateTime   @default(now())
@@ -93,6 +96,7 @@ model Sale {
   user      User       @relation(fields: [userId], references: [id])
   customer  Customer?  @relation(fields: [customerId], references: [id])
   items     SaleItem[]
+  duePayments DuePayment[]
 
   @@map("sales")
 }
@@ -206,4 +210,21 @@ model Payment {
   purchase    Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 
   @@map("payments")
+}
+
+model DuePayment {
+  id          String   @id @default(cuid())
+  saleId      String
+  amount      Float
+  paymentDate DateTime @default(now())
+  method      String?  // cash, bank, check, etc.
+  reference   String?  // check number, transaction id, etc.
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@map("due_payments")
 }

@@ -9,17 +9,26 @@ import {
   CardHeader,
   CardTitle,
 } from "../../components/ui/Card";
-import { Trash2, Eye, DollarSign, Download } from "lucide-react";
+import { Trash2, Eye, DollarSign, Download, Filter, X } from "lucide-react";
 import { useToast } from "../../components/ui/use-toast";
 import { DeleteConfirmationDialog } from "../../components/DeleteConfirmationDialog";
 import { useSession } from "next-auth/react";
 import { ThermalReceipt } from "../../components/ThermalReceipt";
 import * as XLSX from "xlsx";
+import { Input } from "../../components/ui/Input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/Select";
 
 interface Sale {
   id: string;
   total: number;
   discount: number;
+  hasDue: boolean;
   createdAt: string;
   user: {
     id: string;
@@ -60,13 +69,61 @@ export default function SalesManagementPage() {
     isDeleting: false,
   });
 
+  // Dues confirmation dialog state
+  const [duesDialog, setDuesDialog] = useState<{
+    isOpen: boolean;
+    sale: Sale | null;
+    isProcessing: boolean;
+  }>({
+    isOpen: false,
+    sale: null,
+    isProcessing: false,
+  });
+
+  // Filter states
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<{
+    startDate: string;
+    endDate: string;
+    hasDues: string;
+  }>({
+    startDate: "",
+    endDate: "",
+    hasDues: "all",
+  });
+
   useEffect(() => {
     fetchSales();
-  }, []);
+  }, [filters]);
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      startDate: "",
+      endDate: "",
+      hasDues: "all",
+    });
+  };
 
   const fetchSales = async () => {
     try {
-      const response = await fetch("/api/sales");
+      // Build query parameters for filters
+      const params = new URLSearchParams();
+      if (filters.startDate) params.append("startDate", filters.startDate);
+      if (filters.endDate) params.append("endDate", filters.endDate);
+      if (filters.hasDues && filters.hasDues !== "all")
+        params.append("hasDues", filters.hasDues);
+
+      const queryString = params.toString();
+      const url = queryString ? `/api/sales?${queryString}` : "/api/sales";
+
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setSales(data);
@@ -89,6 +146,7 @@ export default function SalesManagementPage() {
         Subtotal: sale.total + (sale.discount || 0),
         Discount: sale.discount || 0,
         "Total Amount": sale.total,
+        "Has Dues": sale.hasDue ? "Yes" : "No",
         Date: new Date(sale.createdAt).toLocaleDateString(),
         Time: new Date(sale.createdAt).toLocaleTimeString(),
         "Items Count": sale.items.length,
@@ -113,6 +171,7 @@ export default function SalesManagementPage() {
         { wch: 12 }, // Subtotal
         { wch: 10 }, // Discount
         { wch: 12 }, // Total Amount
+        { wch: 10 }, // Has Dues
         { wch: 12 }, // Date
         { wch: 10 }, // Time
         { wch: 12 }, // Items Count
@@ -224,6 +283,67 @@ export default function SalesManagementPage() {
     setShowThermalReceipt(false);
   };
 
+  const handleAddDue = (sale: Sale) => {
+    setDuesDialog({
+      isOpen: true,
+      sale,
+      isProcessing: false,
+    });
+  };
+
+  const handleConfirmAddDue = async () => {
+    if (!duesDialog.sale) return;
+
+    setDuesDialog((prev) => ({ ...prev, isProcessing: true }));
+
+    try {
+      const response = await fetch("/api/dues", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ saleId: duesDialog.sale.id }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Sale marked as having dues",
+        });
+        fetchSales(); // Refresh the sales list
+        setDuesDialog({
+          isOpen: false,
+          sale: null,
+          isProcessing: false,
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.error || "Failed to add due",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding due:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add due",
+        variant: "destructive",
+      });
+    } finally {
+      setDuesDialog((prev) => ({ ...prev, isProcessing: false }));
+    }
+  };
+
+  const handleCloseDuesDialog = () => {
+    setDuesDialog({
+      isOpen: false,
+      sale: null,
+      isProcessing: false,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">Loading...</div>
@@ -234,15 +354,95 @@ export default function SalesManagementPage() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Sales Management</h1>
-        <Button
-          onClick={exportToExcel}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+          </Button>
+          <Button
+            onClick={exportToExcel}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export to Excel
+          </Button>
+        </div>
       </div>
+
+      {/* Filters Section */}
+      {showFilters && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">Filters</CardTitle>
+              <Button
+                onClick={clearFilters}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Clear Filters
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Start Date
+                </label>
+                <Input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) =>
+                    handleFilterChange("startDate", e.target.value)
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  End Date
+                </label>
+                <Input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) =>
+                    handleFilterChange("endDate", e.target.value)
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Has Dues
+                </label>
+                <Select
+                  value={filters.hasDues}
+                  onValueChange={(value) =>
+                    handleFilterChange("hasDues", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All sales" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All sales</SelectItem>
+                    <SelectItem value="true">Has dues</SelectItem>
+                    <SelectItem value="false">No dues</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -252,6 +452,16 @@ export default function SalesManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {sales.length} sale{sales.length !== 1 ? "s" : ""}
+              {(filters.startDate ||
+                filters.endDate ||
+                (filters.hasDues && filters.hasDues !== "all")) && (
+                <span className="ml-2 text-blue-600">(filtered)</span>
+              )}
+            </p>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
@@ -270,6 +480,9 @@ export default function SalesManagementPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Has Dues
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Date
@@ -307,6 +520,17 @@ export default function SalesManagementPage() {
                       ৳{sale.total.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          sale.hasDue
+                            ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        }`}
+                      >
+                        {sale.hasDue ? "Yes" : "No"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                       {new Date(sale.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
@@ -317,6 +541,15 @@ export default function SalesManagementPage() {
                         className="mr-2"
                       >
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => handleAddDue(sale)}
+                        size="sm"
+                        variant="outline"
+                        className="mr-2 text-blue-600 hover:text-blue-700"
+                        disabled={sale.hasDue}
+                      >
+                        <DollarSign className="h-4 w-4" />
                       </Button>
                       {session?.user?.role === "admin" && (
                         <Button
@@ -458,6 +691,87 @@ export default function SalesManagementPage() {
         description={`Are you sure you want to delete this sale? This action cannot be undone and will affect inventory records.`}
         isLoading={deleteDialog.isDeleting}
       />
+
+      {/* Dues Confirmation Dialog */}
+      {duesDialog.isOpen && duesDialog.sale && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Mark Sale as Having Dues
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Sale ID: {duesDialog.sale.id.slice(0, 8)}...
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Customer:
+                      </span>
+                      <span className="text-sm font-medium">
+                        {duesDialog.sale.customer?.name || "Walk-in"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Total Amount:
+                      </span>
+                      <span className="text-sm font-medium">
+                        ৳{duesDialog.sale.total.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        Date:
+                      </span>
+                      <span className="text-sm font-medium">
+                        {new Date(
+                          duesDialog.sale.createdAt
+                        ).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                Are you sure you want to mark this sale as having outstanding
+                dues? This will enable the customer to make partial payments
+                towards this sale.
+              </p>
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  onClick={handleCloseDuesDialog}
+                  variant="outline"
+                  disabled={duesDialog.isProcessing}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmAddDue}
+                  disabled={duesDialog.isProcessing}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {duesDialog.isProcessing
+                    ? "Processing..."
+                    : "Yes, Mark as Dues"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Thermal Receipt Modal */}
       {showThermalReceipt && selectedSale && (

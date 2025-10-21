@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import {
@@ -447,9 +448,11 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
               <div className="space-y-3">
                 {previewUrl && (
                   <div className="relative inline-block">
-                    <img
+                    <Image
                       src={previewUrl}
                       alt="Product preview"
+                      width={96}
+                      height={96}
                       className="h-24 w-24 object-cover rounded-lg border"
                     />
                     <button

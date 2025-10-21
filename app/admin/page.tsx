@@ -28,6 +28,7 @@ import {
   TrendingUp as TrendingUpIcon,
   Target,
   Filter,
+  Receipt,
 } from "lucide-react";
 import {
   LineChart,
@@ -74,6 +75,12 @@ interface DashboardData {
     sales: number;
     expenses: number;
     profit: number;
+  };
+  dues: {
+    totalOutstanding: number;
+    totalCollected: number;
+    activeDuesCount: number;
+    collectionRate: number;
   };
   year: number;
 }
@@ -231,21 +238,25 @@ export default function AdminDashboard() {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
         <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6">
-            <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
-              Total Sales
-            </CardTitle>
-            <div className="p-2 bg-green-500 rounded-full flex-shrink-0">
-              <DollarSign className="h-4 w-4 text-white" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 sm:px-6">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 bg-green-500 rounded-full flex-shrink-0 shadow-sm">
+                <DollarSign className="h-4 w-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold text-green-800 dark:text-green-200 leading-tight">
+                  Total Sales
+                </CardTitle>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <div className="text-xl sm:text-2xl font-bold text-green-900 dark:text-green-100">
               {formatCurrency(data.totals.sales)}
             </div>
-            <div className="flex items-center text-xs text-green-700 dark:text-green-300 mt-1">
+            <div className="flex items-center text-xs text-green-700 dark:text-green-300 mt-1 min-w-0">
               <TrendingUpIcon className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">Revenue for {selectedYear}</span>
             </div>
@@ -254,19 +265,23 @@ export default function AdminDashboard() {
         </Card>
 
         <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6">
-            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200 truncate">
-              Inventory Items
-            </CardTitle>
-            <div className="p-2 bg-blue-500 rounded-full flex-shrink-0">
-              <Package className="h-4 w-4 text-white" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 sm:px-6">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 bg-blue-500 rounded-full flex-shrink-0 shadow-sm">
+                <Package className="h-4 w-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold text-blue-800 dark:text-blue-200 leading-tight">
+                  Inventory Items
+                </CardTitle>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <div className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100">
               {inventoryCount}
             </div>
-            <div className="flex items-center text-xs text-blue-700 dark:text-blue-300 mt-1">
+            <div className="flex items-center text-xs text-blue-700 dark:text-blue-300 mt-1 min-w-0">
               <Activity className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">
                 {inventoryCount > 50 ? "Well stocked" : "Low stock alert"}
@@ -277,19 +292,23 @@ export default function AdminDashboard() {
         </Card>
 
         <Card className="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6">
-            <CardTitle className="text-sm font-medium text-red-800 dark:text-red-200 truncate">
-              Total Expenses
-            </CardTitle>
-            <div className="p-2 bg-red-500 rounded-full flex-shrink-0">
-              <CreditCard className="h-4 w-4 text-white" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 sm:px-6">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 bg-red-500 rounded-full flex-shrink-0 shadow-sm">
+                <DollarSign className="h-4 w-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold text-red-800 dark:text-red-200 leading-tight">
+                  Total Expenses
+                </CardTitle>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <div className="text-xl sm:text-2xl font-bold text-red-900 dark:text-red-100">
               {formatCurrency(data.totals.expenses)}
             </div>
-            <div className="flex items-center text-xs text-red-700 dark:text-red-300 mt-1">
+            <div className="flex items-center text-xs text-red-700 dark:text-red-300 mt-1 min-w-0">
               <TrendingDown className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">Costs for {selectedYear}</span>
             </div>
@@ -297,20 +316,24 @@ export default function AdminDashboard() {
           <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-red-400/10 rounded-full -mr-8 -mt-8"></div>
         </Card>
 
-        <Card className="relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 sm:px-6">
-            <CardTitle className="text-sm font-medium text-purple-800 dark:text-purple-200 truncate">
-              Total Profit
-            </CardTitle>
-            <div className="p-2 bg-purple-500 rounded-full flex-shrink-0">
-              <Target className="h-4 w-4 text-white" />
+        <Card className="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 sm:px-6">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 bg-green-500 rounded-full flex-shrink-0 shadow-sm">
+                <TrendingUp className="h-4 w-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold text-green-800 dark:text-green-200 leading-tight">
+                  Total Profit
+                </CardTitle>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             <div className="text-xl sm:text-2xl font-bold text-purple-900 dark:text-purple-100">
               {formatCurrency(data.totals.profit)}
             </div>
-            <div className="flex items-center text-xs text-purple-700 dark:text-purple-300 mt-1">
+            <div className="flex items-center text-xs text-purple-700 dark:text-purple-300 mt-1 min-w-0">
               <TrendingUp className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">
                 {data.totals.sales > 0
@@ -323,6 +346,60 @@ export default function AdminDashboard() {
           </CardContent>
           <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-purple-400/10 rounded-full -mr-8 -mt-8"></div>
         </Card>
+
+        <Card className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 sm:px-6">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 bg-orange-500 rounded-full flex-shrink-0 shadow-sm">
+                <Receipt className="h-4 w-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold text-orange-800 dark:text-orange-200 leading-tight">
+                  Outstanding Dues
+                </CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="text-xl sm:text-2xl font-bold text-orange-900 dark:text-orange-100">
+              {formatCurrency(data.dues.totalOutstanding)}
+            </div>
+            <div className="flex items-center text-xs text-orange-700 dark:text-orange-300 mt-1 min-w-0">
+              <Activity className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="truncate">
+                {data.dues.activeDuesCount} active dues
+              </span>
+            </div>
+          </CardContent>
+          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-orange-400/10 rounded-full -mr-8 -mt-8"></div>
+        </Card>
+
+        <Card className="relative overflow-hidden bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/20 border-teal-200 dark:border-teal-800">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 sm:px-6">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 bg-teal-500 rounded-full flex-shrink-0 shadow-sm">
+                <TrendingUpIcon className="h-4 w-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold text-teal-800 dark:text-teal-200 leading-tight">
+                  Collection Rate
+                </CardTitle>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            <div className="text-xl sm:text-2xl font-bold text-teal-900 dark:text-teal-100">
+              {data.dues.collectionRate.toFixed(1)}%
+            </div>
+            <div className="flex items-center text-xs text-teal-700 dark:text-teal-300 mt-1 min-w-0">
+              <Target className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="truncate">
+                {formatCurrency(data.dues.totalCollected)} collected
+              </span>
+            </div>
+          </CardContent>
+          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-teal-400/10 rounded-full -mr-8 -mt-8"></div>
+        </Card>
       </div>
 
       {/* Charts Section */}
@@ -332,11 +409,11 @@ export default function AdminDashboard() {
           <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <BarChart3 className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-3 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                   Sales vs Profit %
                 </CardTitle>
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Monthly sales performance and profit margins for{" "}
                   {selectedYear}
                 </CardDescription>
@@ -344,7 +421,7 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                className="self-start sm:self-auto"
+                className="self-start sm:self-auto hover:bg-blue-50 dark:hover:bg-blue-900/20"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -417,11 +494,11 @@ export default function AdminDashboard() {
         {/* Category Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <PieChart className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-3 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+              <PieChart className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
               Sales by Category
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Product category performance for {selectedYear}
             </CardDescription>
           </CardHeader>
@@ -483,11 +560,11 @@ export default function AdminDashboard() {
           <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <ShoppingCart className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-3 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  <ShoppingCart className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                   Recent Transactions
                 </CardTitle>
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Latest sales and activities
                 </CardDescription>
               </div>
@@ -495,7 +572,7 @@ export default function AdminDashboard() {
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/sales-management")}
-                className="self-start sm:self-auto"
+                className="self-start sm:self-auto hover:bg-green-50 dark:hover:bg-green-900/20"
               >
                 <Eye className="h-4 w-4 mr-2" />
                 View All
@@ -548,10 +625,10 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base sm:text-lg">
+            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
               Quick Actions
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Common administrative tasks
             </CardDescription>
           </CardHeader>
@@ -595,6 +672,14 @@ export default function AdminDashboard() {
             >
               <ShoppingCart className="h-4 w-4 mr-2 flex-shrink-0" />
               <span className="truncate">View Sales</span>
+            </Button>
+            <Button
+              className="w-full justify-start text-sm sm:text-base"
+              variant="outline"
+              onClick={() => router.push("/dues")}
+            >
+              <Receipt className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">Manage Dues</span>
             </Button>
           </CardContent>
         </Card>

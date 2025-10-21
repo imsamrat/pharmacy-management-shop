@@ -206,6 +206,7 @@ export function SaleForm() {
         })),
         total: getFinalTotal(),
         discount: discount,
+        paidAmount: 0, // Always set to 0 since payment is handled separately
       };
 
       // Include customer data if phone is provided
@@ -245,6 +246,8 @@ export function SaleForm() {
           subtotal: getTotal(),
           discount: discount,
           total: getFinalTotal(),
+          paidAmount: 0, // Always 0 since payment is handled separately
+          change: 0, // No change since no payment is collected
           saleId: saleResult.sale?.id,
           date: new Date().toLocaleString(),
           cashier: session?.user?.name || "Unknown",

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "../ui/Button";
+import { useSession, signOut } from "next-auth/react";
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,28 @@ interface ResponsiveLayoutProps {
 
 export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { data: session } = useSession();
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setUserMenuOpen(false);
+      }
+    }
+
+    if (userMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [userMenuOpen]);
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
@@ -61,7 +84,35 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
               Pharmacy Management
             </h1>
-            <div className="w-10" /> {/* Spacer for centering */}
+            <div className="relative" ref={userMenuRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="p-2"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {session?.user?.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                      {session?.user?.role}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/auth/login" })}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

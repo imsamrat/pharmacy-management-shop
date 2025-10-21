@@ -19,6 +19,7 @@ import {
   UserCheck,
   Search,
   Building2,
+  Receipt,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -45,6 +46,12 @@ const navigation = [
     name: "Sales Management",
     href: "/sales-management",
     icon: FileText,
+    roles: ["admin"],
+  },
+  {
+    name: "Dues",
+    href: "/dues",
+    icon: Receipt,
     roles: ["admin"],
   },
   {
