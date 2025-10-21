@@ -77,12 +77,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "all";
 
-    // Build where clause - include all sales with payment history
+    // Build where clause - only include sales marked as having dues
     const whereClause: any = {
-      OR: [
-        { hasDue: true },
-        { status: { in: ["partial", "pending", "paid"] } },
-      ],
+      hasDue: true,
     };
 
     // Apply additional status filter if specific status is selected
