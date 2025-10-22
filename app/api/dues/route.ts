@@ -77,14 +77,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "all";
 
-    // Build where clause - only include sales marked as having dues
-    const whereClause: any = {
-      hasDue: true,
-    };
+    // Build where clause based on status filter
+    const whereClause: any = {};
 
-    // Apply additional status filter if specific status is selected
-    if (status && status !== "all") {
-      whereClause.status = status;
+    if (status === "paid") {
+      // For "Fully Paid": show sales that are paid AND have due payments (were originally dues)
+      whereClause.AND = [
+        { status: "paid" },
+        {
+          duePayments: {
+            some: {}, // Has at least one due payment
+          },
+        },
+      ];
+    } else if (status && status !== "all") {
+      // For other specific statuses: show sales with hasDue: true AND specific status
+      whereClause.AND = [{ hasDue: true }, { status: status }];
+    } else {
+      // For "all": show all sales with hasDue: true
+      whereClause.hasDue = true;
     }
 
     const sales = await db.sale.findMany({
